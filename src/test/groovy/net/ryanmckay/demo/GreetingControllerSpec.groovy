@@ -1,27 +1,38 @@
 package net.ryanmckay.demo
 
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
+import org.springframework.boot.context.embedded.LocalServerPort
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.test.web.servlet.MockMvc
+import org.springframework.boot.test.web.client.TestRestTemplate
+import org.springframework.http.HttpStatus
+import org.springframework.http.ResponseEntity
 import spock.lang.Specification
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print
-
-@AutoConfigureMockMvc
-@SpringBootTest
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class GreetingControllerSpec extends Specification {
 
-    @Autowired
-    private MockMvc mockMvc;
+    @LocalServerPort
+    private int port
 
-    def "no Param greeting should return default message"() throws Exception {
+    @Autowired
+    private TestRestTemplate restTemplate
+
+    def "no Param greeting should return default message"() {
 
         when:
-        def response = this.mockMvc.perform(get("/greeting")).andDo(print()).andReturn().response
+        ResponseEntity<Greeting> responseGreeting = restTemplate.getForEntity("http://localhost:" + port + "/greeting", Greeting.class)
 
         then:
-        response.status != 200
+        responseGreeting.statusCode == HttpStatus.OK
+        responseGreeting.body.content == "blah"
+    }
+
+    def "param Greeting Should Return Tailored Message"() {
+        when:
+        ResponseEntity<Greeting> responseGreeting = restTemplate.getForEntity("http://localhost:" + port + "/greeting?name={name}", Greeting.class, "Spring Community")
+
+        then:
+        responseGreeting.statusCode == HttpStatus.OK
+        responseGreeting.body.content == "Hello, Spring Community!"
     }
 }
