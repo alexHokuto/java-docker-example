@@ -20,11 +20,12 @@ class GreetingControllerSpec extends Specification {
     def "no Param greeting should return default message"() {
 
         when:
-        ResponseEntity<Greeting> responseGreeting = restTemplate.getForEntity("http://localhost:" + port + "/greeting", Greeting.class)
+        ResponseEntity<Greeting> responseGreeting = restTemplate
+                .getForEntity("http://localhost:" + port + "/greeting", Greeting.class)
 
         then:
         responseGreeting.statusCode == HttpStatus.OK
-        responseGreeting.body.content == "blah"
+        responseGreeting.body.content == "Hello, World!"
     }
 
     def "param Greeting Should Return Tailored Message"() {
