@@ -61,13 +61,14 @@ test {
 // for docker
 group = 'ryanmckay'
 
+docker {
+	baseImage 'openjdk:8-jdk-alpine'
+}
+
 task buildDocker(type: Docker, dependsOn: build) {
 	applicationName = jar.baseName
-	dockerfile = file('src/main/docker/Dockerfile')
-	doFirst {
-		copy {
-			from jar
-			into "${stageDir}/target"
-		}
-	}
+	volume('/tmp')
+	addFile(jar.archivePath, 'app.jar')
+	setEnvironment('JAVA_OPTS', '""')
+	entryPoint([ 'sh', '-c', 'java $JAVA_OPTS -Djava.security.egd=file:/dev/./urandom -jar /app.jar' ])
 }
