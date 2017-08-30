@@ -67,6 +67,7 @@ docker {
 
 task buildDocker(type: Docker, dependsOn: build) {
 	applicationName = jar.baseName
+	tagVersion = 'latest'
 	volume('/tmp')
 	addFile(jar.archivePath, 'app.jar')
 	setEnvironment('JAVA_OPTS', '""')
