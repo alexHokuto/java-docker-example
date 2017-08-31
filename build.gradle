@@ -7,17 +7,18 @@ buildscript {
 	}
 	dependencies {
 		classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
-		classpath('se.transmode.gradle:gradle-docker:1.2')
+		classpath('com.bmuschko:gradle-docker-plugin:3.1.+')
 	}
 }
 
 apply plugin: 'java'
 apply plugin: 'groovy'
 apply plugin: 'org.springframework.boot'
-apply plugin: 'docker'
+apply plugin: 'com.bmuschko.docker-remote-api'
 
 version = '0.0.1-SNAPSHOT'
-sourceCompatibility = 1.8
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
 
 def groovyVersion = '2.4'
 def spockVersion = '1.1'
@@ -61,15 +62,32 @@ test {
 // for docker
 group = 'ryanmckay'
 
-docker {
-	baseImage 'openjdk:8-jdk-alpine'
+import com.bmuschko.gradle.docker.tasks.image.Dockerfile
+import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
+
+import java.nio.file.Paths
+
+task assembleDocker(type: Copy) {
+	dependsOn build
+	from jar.archivePath
+	into Paths.get(buildDir as String,'docker')
 }
 
-task buildDocker(type: Docker, dependsOn: build) {
-	applicationName = jar.baseName
-	tagVersion = 'latest'
-	volume('/tmp')
-	addFile(jar.archivePath, 'app.jar')
-	setEnvironment('JAVA_OPTS', '""')
-	entryPoint([ 'sh', '-c', 'java $JAVA_OPTS -Djava.security.egd=file:/dev/./urandom -jar /app.jar' ])
+task createDockerfile(type: Dockerfile) {
+	destFile = new File(assembleDocker.destinationDir as String, 'Dockerfile')
+	from 'openjdk:8-jdk-alpine'
+	volume '/tmp'
+	addFile(jar.archiveName, 'app.jar')
+	environmentVariable('JAVA_OPTS', '""')
+	entryPoint('sh', '-c', 'java $JAVA_OPTS -Djava.security.egd=file:/dev/./urandom -jar /app.jar')
+}
+
+task buildImage(type: DockerBuildImage) {
+	dependsOn assembleDocker
+	dependsOn createDockerfile
+	inputDir = assembleDocker.destinationDir
+	tags = [
+			project.group + '/' + project.name + ':latest',
+			project.group + '/' + project.name + ':' + project.version
+	]
 }
