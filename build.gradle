@@ -67,6 +67,13 @@ import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
 
 import java.nio.file.Paths
 
+docker {
+	url = System.env.DOCKER_HOST ?: url
+	certPath = System.env.DOCKER_CERT_PATH ?
+			new File(System.env.DOCKER_CERT_PATH) : certPath
+	apiVersion = System.env.DOCKER_API_VERSION ?: apiVersion
+}
+
 task assembleDocker(type: Copy) {
 	dependsOn build
 	from jar.archivePath
